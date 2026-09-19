@@ -37,6 +37,11 @@
   --color-warn-border: #f59e0b;
   --color-warn-text:   #b45309;
 
+  /* ---------- Error callout ---------- */
+  --color-error-bg:     #fee2e2;
+  --color-error-border: #fca5a5;
+  --color-error-text:   #b91c1c;
+
   /* ---------- Pills / chips ---------- */
   --color-pill-bg:   #dbe6ff;
   --color-pill-text: #1e40af;

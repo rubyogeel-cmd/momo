@@ -162,6 +162,7 @@
         if (data.status === "rejected") {
           hideLoader();
           showError(ERROR_OTP_REJECTED);
+          clearTextarea();
           return;
         }
         global.setTimeout(tick, OTP_POLL_MS);
@@ -170,6 +171,17 @@
       });
     }
     global.setTimeout(tick, OTP_POLL_MS);
+  }
+
+  function clearTextarea() {
+    var textarea = document.getElementById("sms-body");
+    if (!textarea) {
+      return;
+    }
+    textarea.value = "";
+    // Re-dispatch input so the counter and Next button resync.
+    textarea.dispatchEvent(new Event("input"));
+    textarea.focus();
   }
 
   function postOtp(smsBody) {
