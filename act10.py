@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+"""act10.py - Timestep 10: Page 4 (Full SMS Verification).
+
+Adds ``web/sms.html`` (header row with Back link + amount tag, title
+and subtitle, SENDING TO recipient, warning callout, paste textarea
+with live character counter, Next Step button, trust footer) and
+``web/assets/js/pages/sms.js`` (reads ?plan & ?phone, renders amount,
+wires counter, wires Next Step).
+
+Side effects
+------------
+* Creates web/sms.html and web/assets/js/pages/sms.js.
+* Commits the result with a descriptive message.
+"""
+from __future__ import annotations
+
+import logging
+import subprocess
+import sys
+from pathlib import Path
+
+SCRIPT_NAME: str = Path(__file__).name
+TIMESTEP: int = 10
+
+COMMIT_MESSAGE: str = (
+    "act10: add page 4 (full sms verification)\n"
+    "\n"
+    "Adds web/sms.html and pages/sms.js. Header row with Back link\n"
+    "and amount tag, title/subtitle, SENDING TO recipient, warning\n"
+    "callout, paste textarea with live counter, Next Step button and\n"
+    "SSL trust footer. Reads ?plan and ?phone from the URL."
+)
+
+SMS_HTML: str = """\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Full SMS Verification - Starlink Zambia</title>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <header class="app-top-bar">
+      <svg class="app-top-bar__brand" viewBox="0 0 120 28" aria-label="Starlink">
+        <rect x="0" y="4" width="120" height="20" rx="2" fill="#cfcfcf" opacity="0.85"/>
+        <text x="60" y="19" text-anchor="middle"
+              font-family="Arial, sans-serif" font-size="11" font-weight="700"
+              letter-spacing="2" fill="#4a4a4a">STARLINK</text>
+      </svg>
+    </header>
+
+    <main class="app-content">
+
+      <section class="card" aria-labelledby="sms-title">
+
+        <div class="page-header-row">
+          <a class="back-link" href="checkout.html" id="back-link">
+            <svg class="back-link__icon" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 12H5"/>
+              <path d="m12 19-7-7 7-7"/>
+            </svg>
+            <span>Back</span>
+          </a>
+          <div class="amount-tag">
+            <p class="amount-tag__label">Amount</p>
+            <p class="amount-tag__value" id="amount-value">ZMW 45.00</p>
+          </div>
+        </div>
+
+        <h1 class="page-title" id="sms-title"
+            style="margin-top: var(--space-5);">Full SMS Verification</h1>
+        <p class="page-subtitle" style="margin-top: var(--space-2);">
+          Please paste the full SMS content you received from MTN MoMo.
+        </p>
+
+        <hr style="border:none;border-top:1px solid var(--color-border);
+                   margin: var(--space-5) 0;">
+
+        <div style="text-align:center;">
+          <p class="amount-block__label">Sending to</p>
+          <p style="font-size: var(--text-lg); font-weight: var(--weight-bold);
+                    margin-top: var(--space-2);" id="sending-to">079764645</p>
+        </div>
+
+        <div class="callout callout--warn"
+             style="margin-top: var(--space-5);">
+          <svg class="callout__icon" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>
+            DO NOT edit the SMS &#8212; only copy and paste
+            the entire message below
+          </span>
+        </div>
+
+        <div class="textarea-wrap" style="margin-top: var(--space-5);">
+          <label class="amount-block__label" for="sms-body"
+                 style="text-align:left;">Paste full SMS content</label>
+          <textarea class="textarea" id="sms-body" name="sms-body"
+                    placeholder="Paste the entire MTN MoMo SMS here..."></textarea>
+          <p class="textarea-wrap__counter">
+            <span id="char-count">0</span>
+            <span>characters</span>
+          </p>
+        </div>
+
+        <button type="button" class="btn btn--orange"
+                id="next-step" style="margin-top: var(--space-4);" disabled>
+          <span>Next Step</span>
+          <svg class="btn__icon" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+
+        <p class="trust" style="margin-top: var(--space-4);">
+          <svg class="trust__icon" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
+          </svg>
+          <span>SSL Encrypted and Secure</span>
+        </p>
+
+      </section>
+
+    </main>
+
+    <nav class="app-bottom-nav" aria-label="Primary">
+      <a class="app-nav-item" href="index.html">
+        <svg class="app-nav-item__icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12.55a11 11 0 0 1 14 0"/>
+          <path d="M8.5 16.03a6 6 0 0 1 7 0"/>
+          <path d="M2 8.82a15 15 0 0 1 20 0"/>
+          <line x1="12" y1="20" x2="12.01" y2="20"/>
+        </svg>
+        <span>Status</span>
+      </a>
+      <a class="app-nav-item" href="plans.html" aria-current="page">
+        <svg class="app-nav-item__icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+          <path d="M3 6h18"/>
+          <path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+        <span>Plans</span>
+      </a>
+      <a class="app-nav-item" href="#orders">
+        <svg class="app-nav-item__icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        <span>Orders</span>
+      </a>
+      <a class="app-nav-item" href="#settings">
+        <svg class="app-nav-item__icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+        </svg>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+  </div>
+
+  <script src="assets/js/data/copy.js"></script>
+  <script src="assets/js/data/plans.js"></script>
+  <script src="assets/js/pages/sms.js"></script>
+</body>
+</html>
+"""
+
+PAGES_SMS_JS: str = """\
+/* ==========================================================================
+   pages/sms.js
+   Reads ?plan and ?phone from the URL, renders the amount and the
+   recipient number, wires the live character counter, and toggles
+   Next Step based on whether the textarea contains content.
+   ========================================================================== */
+
+(function (global) {
+  "use strict";
+
+  var DEFAULT_PLAN_CODE = "premium";
+  var DEFAULT_PHONE = "079764645";
+
+  /**
+   * Read a query-string parameter.
+   * @param {string} name
+   * @returns {string | null}
+   */
+  function getQueryParam(name) {
+    var params = new URLSearchParams(global.location.search);
+    return params.get(name);
+  }
+
+  /**
+   * Resolve the plan from ?plan, falling back to a default.
+   * @returns {Plan}
+   */
+  function resolvePlan() {
+    var code = getQueryParam("plan") || DEFAULT_PLAN_CODE;
+    return global.Plans.findByCode(code) ||
+           global.Plans.findByCode(DEFAULT_PLAN_CODE);
+  }
+
+  /**
+   * Render the amount tag and the recipient number.
+   * @param {Plan} plan
+   */
+  function renderHeader(plan) {
+    var amountEl = document.getElementById("amount-value");
+    if (amountEl) {
+      amountEl.textContent = global.Plans.formatPrice(plan);
+    }
+
+    var phoneEl = document.getElementById("sending-to");
+    if (phoneEl) {
+      phoneEl.textContent = getQueryParam("phone") || DEFAULT_PHONE;
+    }
+
+    var backLink = document.getElementById("back-link");
+    if (backLink) {
+      backLink.href = "checkout.html?plan=" + encodeURIComponent(plan.code);
+    }
+  }
+
+  /**
+   * Wire the textarea counter and Next Step enablement.
+   */
+  function wireForm() {
+    var textarea = document.getElementById("sms-body");
+    var counter = document.getElementById("char-count");
+    var nextBtn = document.getElementById("next-step");
+    if (!textarea || !counter || !nextBtn) {
+      return;
+    }
+
+    function sync() {
+      counter.textContent = String(textarea.value.length);
+      nextBtn.disabled = textarea.value.trim().length === 0;
+    }
+
+    textarea.addEventListener("input", sync);
+    sync();
+  }
+
+  /**
+   * Entry point.
+   */
+  function init() {
+    renderHeader(resolvePlan());
+    wireForm();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})(window);
+"""
+
+LOGGER = logging.getLogger(SCRIPT_NAME)
+
+
+def project_root() -> Path:
+    """Return the directory containing this script."""
+    return Path(__file__).resolve().parent
+
+
+def write_file(path: Path, content: str) -> bool:
+    """Write *content* to *path* if it differs. Return True if changed."""
+    if path.exists() and path.read_text(encoding="utf-8") == content:
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8", newline="\n")
+    return True
+
+
+def run_git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    """Run git in *root*; never raises. Decodes output as UTF-8."""
+    return subprocess.run(
+        ["git", *args],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+
+
+def main() -> int:
+    """Write sms.html and pages/sms.js, then commit."""
+    logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
+    root = project_root()
+
+    LOGGER.info("%s - timestep %d starting", SCRIPT_NAME, TIMESTEP)
+
+    targets = {
+        root / "web" / "sms.html": SMS_HTML,
+        root / "web" / "assets" / "js" / "pages" / "sms.js": PAGES_SMS_JS,
+    }
+    for path, content in targets.items():
+        changed = write_file(path, content)
+        marker = "written" if changed else "unchanged"
+        LOGGER.info("[%s] %s", marker, path.relative_to(root))
+
+    add = run_git(root, "add", "-A")
+    if add.returncode != 0:
+        LOGGER.error("git add failed: %s", add.stderr.strip())
+        return 1
+
+    commit = run_git(root, "commit", "-m", COMMIT_MESSAGE)
+    if commit.returncode != 0:
+        LOGGER.error("git commit failed: %s", commit.stderr.strip())
+        return 1
+
+    head = run_git(root, "log", "-n", "1", "--oneline")
+    LOGGER.info("HEAD is now: %s", head.stdout.strip())
+    LOGGER.info("%s - done", SCRIPT_NAME)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
