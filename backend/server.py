@@ -399,15 +399,47 @@ def _try_load_telegram() -> tuple[TelegramClient | None, SessionStore]:
     return TelegramClient(config), session_store
 
 
+def get_lan_ip() -> str | None:
+    """Return the primary LAN IP, or None if it cannot be determined.
+
+    Uses a UDP socket trick: connect a socket to a public address
+    (no packets are actually sent) so the OS fills in the source
+    address of the interface it would use for outbound traffic.
+    """
+    import socket as _socket
+    try:
+        with _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+    except OSError:
+        return None
+
+
 def serve(
-    host: str = "127.0.0.1",
+    host: str = "0.0.0.0",
     port: int = 8000,
 ) -> None:
     """Blocking entry point: load config, start server."""
     telegram, store = _try_load_telegram()
     server = MomoServer((host, port), telegram, store)
-    LOGGER.info("Momo server listening on http://%s:%d", host, port)
-    LOGGER.info("Preview: http://%s:%d/preview.html", host, port)
+
+    LOGGER.info("Momo server listening on http://localhost:%d", port)
+    LOGGER.info("Preview: http://localhost:%d/preview.html", port)
+    if host == "0.0.0.0":
+        lan_ip = get_lan_ip()
+        if lan_ip:
+            LOGGER.info("")
+            LOGGER.info("On your phone (same Wi-Fi), open:")
+            LOGGER.info("    http://%s:%d/", lan_ip, port)
+            LOGGER.info(
+                "If the phone cannot connect, allow Python through the "
+                "Windows Defender Firewall (private networks) and retry."
+            )
+        else:
+            LOGGER.info(
+                "Could not detect a LAN IP; on the phone use "
+                "ipconfig to find it and open http://<IP>:%d/", port
+            )
     if telegram is None:
         LOGGER.warning(
             "Telegram is not configured - API calls will return 503. "
