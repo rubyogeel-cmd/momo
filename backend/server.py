@@ -295,6 +295,12 @@ class Handler(BaseHTTPRequestHandler):
             target = PROJECT_ROOT / "preview.html"
         else:
             safe = path.lstrip("/")
+            # preview.html iframes point at "web/index.html" so the
+            # preview also works when opened via file://. When served
+            # over HTTP, strip the leading "web/" so both forms
+            # resolve to the same file.
+            if safe.startswith("web/"):
+                safe = safe[len("web/"):]
             target = (WEB_ROOT / safe).resolve()
             try:
                 target.relative_to(WEB_ROOT.resolve())
