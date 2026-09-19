@@ -101,7 +101,7 @@ New-NetFirewallRule -DisplayName "Momo dev" -Direction Inbound -LocalPort 8000 -
    | Root Directory | *(leave empty)* |
    | Runtime | `Python 3` |
    | Build Command | `pip install -r requirements.txt` |
-   | Start Command | *(leave empty - the Procfile supplies it)* |
+   | Start Command | `python run_server.py` |
    | Instance Type | `Free` |
 
 5. Under **Environment Variables**, add exactly two:
