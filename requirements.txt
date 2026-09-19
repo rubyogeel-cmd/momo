@@ -1,0 +1,4 @@
+# No third-party dependencies. The project uses only the Python
+# standard library. This file exists so that PaaS platforms such as
+# Render can run their default "pip install -r requirements.txt"
+# build step without a custom Build Command.

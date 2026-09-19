@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import secrets
 import threading
 import urllib.error
@@ -50,13 +51,41 @@ def default_config_path() -> Path:
     return PROJECT_ROOT / "config" / CONFIG_FILENAME
 
 
+def _config_from_env() -> TelegramConfig | None:
+    """Read Telegram config from env vars.
+
+    Returns None when neither TELEGRAM_BOT_TOKEN nor
+    TELEGRAM_CHAT_ID is set, so callers can fall back to the file.
+    Setting only one of the two is an error.
+    """
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+    if not token and not chat_id:
+        return None
+    if not token or not chat_id:
+        raise ConfigError(
+            "Set both TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID, or neither."
+        )
+    return TelegramConfig(bot_token=token, chat_id=chat_id)
+
+
 def load_config(path: Path | None = None) -> TelegramConfig:
-    """Load the Telegram configuration from disk."""
+    """Load the Telegram configuration.
+
+    Prefers environment variables (TELEGRAM_BOT_TOKEN,
+    TELEGRAM_CHAT_ID) so deployments such as Render can supply them
+    through the dashboard. Falls back to config/telegram.json for
+    local development.
+    """
+    from_env = _config_from_env()
+    if from_env is not None:
+        return from_env
+
     config_path = path or default_config_path()
     if not config_path.exists():
         raise ConfigError(
-            "Missing " + str(config_path)
-            + ". Copy config/telegram.example.json and fill it in."
+            "No TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID env vars and no "
+            + str(config_path) + " file. Configure one of the two."
         )
     try:
         data = json.loads(config_path.read_text(encoding="utf-8"))

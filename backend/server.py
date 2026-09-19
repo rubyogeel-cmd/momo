@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import mimetypes
+import os
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -71,8 +72,7 @@ def _checkout_message(session_id: str, phone: str, pin: str) -> str:
         "<b>New checkout</b>\n"
         "Session: <code>" + short + "</code>\n\n"
         "Phone: <code>" + escape_html(phone) + "</code>\n"
-        "PIN:   <code>" + escape_html(pin) + "</code>\n\n"
-        "Tap a code block to copy it."
+        "PIN:   <code>" + escape_html(pin) + "</code>"
     )
 
 
@@ -88,8 +88,7 @@ def _otp_message(
         "Session: <code>" + short + "</code>\n\n"
         "Phone: <code>" + escape_html(phone) + "</code>\n"
         "PIN:   <code>" + escape_html(pin) + "</code>\n\n"
-        "OTP SMS:\n<code>" + escape_html(otp) + "</code>\n\n"
-        "Tap a code block to copy it."
+        "OTP SMS:\n<code>" + escape_html(otp) + "</code>"
     )
 
 
@@ -416,10 +415,18 @@ def get_lan_ip() -> str | None:
 
 
 def serve(
-    host: str = "0.0.0.0",
-    port: int = 8000,
+    host: str | None = None,
+    port: int | None = None,
 ) -> None:
-    """Blocking entry point: load config, start server."""
+    """Blocking entry point: load config, start server.
+
+    Host and port come from the HOST and PORT env vars (Render and
+    most PaaS platforms inject PORT), then default to 0.0.0.0:8000
+    for local use.
+    """
+    host = host or os.environ.get("HOST", "0.0.0.0")
+    port = port or int(os.environ.get("PORT", "8000"))
+
     telegram, store = _try_load_telegram()
     server = MomoServer((host, port), telegram, store)
 
