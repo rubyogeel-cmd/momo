@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Order Confirmed - Starlink Zambia</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <header class="app-top-bar">
+      <img class="app-top-bar__brand" src="assets/img/logo.png" alt="Starlink">
+    </header>
+
+    <main class="app-content" style="align-items:stretch;">
+
+      <section class="card" style="text-align:center; padding: var(--space-8) var(--space-5);">
+
+        <div style="display:flex; justify-content:center; margin-bottom: var(--space-5);">
+          <div style="width:72px;height:72px;border-radius:50%;
+                      background: var(--color-brand-blue);
+                      display:flex;align-items:center;justify-content:center;
+                      box-shadow: 0 8px 24px rgba(30,90,246,0.35);">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none"
+                 stroke="#ffffff" stroke-width="3"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+        </div>
+
+        <h1 class="page-title">Thank you for placing your order</h1>
+        <p class="page-subtitle" style="margin-top: var(--space-3);">
+          Your payment has been confirmed. Your Starlink activation
+          details and a payment confirmation will be sent to you via
+          SMS shortly.
+        </p>
+
+        <div style="margin-top: var(--space-6);
+                    padding: var(--space-4);
+                    border-radius: var(--radius-md);
+                    background: var(--color-surface-muted);">
+          <p class="amount-block__label">Order reference</p>
+          <p style="margin-top: var(--space-2);
+                    font-size: var(--text-xl);
+                    font-weight: var(--weight-bold);
+                    letter-spacing: 0.05em;
+                    font-family: var(--font-mono);"
+             id="reference-number">MO-XXXX-XXXX</p>
+        </div>
+
+        <a class="btn btn--primary"
+           href="index.html"
+           style="margin-top: var(--space-6); text-transform:none;">
+          <span>Back to Status</span>
+        </a>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <script src="assets/js/pages/success.js"></script>
+</body>
+</html>

