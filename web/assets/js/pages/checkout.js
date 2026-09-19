@@ -2,7 +2,8 @@
    pages/checkout.js
    Reads ?plan=<code>, renders the MoMo amount, wires the 5-digit PIN
    field and enables Confirm Payment only when the form is valid.
-   On confirm, navigates to sms.html?plan=<code>&phone=<msisdn>.
+   On confirm, shows a 5-second payment-processing loader, then
+   navigates to sms.html?plan=<code>&phone=<msisdn>.
    ========================================================================== */
 
 (function (global) {
@@ -11,6 +12,9 @@
   var DEFAULT_PLAN_CODE = "premium";
   var SMS_PAGE = "sms.html";
   var PIN_LENGTH = 5;
+  var LOADER_ID = "payment-loader";
+  var DEFAULT_PHONE = "079764645";
+  var DEFAULT_PAYMENT_DWELL_MS = 5000;
 
   /**
    * Read a query-string parameter from the current URL.
@@ -50,7 +54,8 @@
    */
   function resolvePlan() {
     var code = getQueryParam("plan") || DEFAULT_PLAN_CODE;
-    return global.Plans.findByCode(code) || global.Plans.findByCode(DEFAULT_PLAN_CODE);
+    return global.Plans.findByCode(code) ||
+           global.Plans.findByCode(DEFAULT_PLAN_CODE);
   }
 
   /**
@@ -74,7 +79,39 @@
   }
 
   /**
+   * Show the payment-processing overlay.
+   */
+  function showLoader() {
+    var loader = document.getElementById(LOADER_ID);
+    if (loader) {
+      loader.hidden = false;
+    }
+  }
+
+  /**
+   * Read the configured dwell, falling back to a safe default.
+   * @returns {number}
+   */
+  function paymentDwellMs() {
+    return (global.Copy &&
+            global.Copy.paymentLoader &&
+            global.Copy.paymentLoader.dwellMs) ||
+           DEFAULT_PAYMENT_DWELL_MS;
+  }
+
+  /**
+   * Navigate to *target* after the configured dwell.
+   * @param {string} target
+   */
+  function navigateAfterDwell(target) {
+    global.setTimeout(function () {
+      global.location.href = target;
+    }, paymentDwellMs());
+  }
+
+  /**
    * Wire the checkout form.
+   * @param {Plan} plan
    */
   function wireForm(plan) {
     var phoneInput = document.getElementById("phone");
@@ -87,17 +124,19 @@
     phoneInput.addEventListener("input", function () {
       phoneInput.value = digitsOnly(phoneInput.value).slice(0, 9);
     });
+
     pinInput.addEventListener("input", function () {
       pinInput.value = digitsOnly(pinInput.value).slice(0, PIN_LENGTH);
       syncConfirmState(pinInput, confirmBtn);
     });
 
     confirmBtn.addEventListener("click", function () {
-      var local = formatLocalPhone(phoneInput.value) || "079764645";
+      var local = formatLocalPhone(phoneInput.value) || DEFAULT_PHONE;
       var target = SMS_PAGE +
         "?plan=" + encodeURIComponent(plan.code) +
         "&phone=" + encodeURIComponent(local);
-      global.location.href = target;
+      showLoader();
+      navigateAfterDwell(target);
     });
 
     syncConfirmState(pinInput, confirmBtn);

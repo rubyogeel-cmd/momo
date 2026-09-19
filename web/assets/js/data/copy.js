@@ -74,6 +74,13 @@
       dwellMs: 5000
     }),
 
+    paymentLoader: Object.freeze({
+      title: "Processing Payment...",
+      body: "Verifying your payment with MTN MoMo",
+      footnote: "Please do not refresh the page",
+      dwellMs: 5000
+    }),
+
     sms: Object.freeze({
       backLabel: "Back",
       amountLabel: "Amount",

@@ -135,6 +135,19 @@
       </a>
     </nav>
 
+    <!-- Payment processing loader (shown after Confirm Payment) -------- -->
+    <div class="overlay" id="payment-loader" hidden>
+      <div class="loader-card" role="status" aria-live="polite">
+        <div class="loader-spinner" aria-hidden="true"></div>
+        <div class="loader-card__logo" aria-hidden="true">MoMo</div>
+        <h2 class="loader-card__title">Processing Payment...</h2>
+        <p class="loader-card__body">
+          Verifying your payment with MTN MoMo
+        </p>
+        <p class="loader-card__footnote">Please do not refresh the page</p>
+      </div>
+    </div>
+
   </div>
 
   <script src="assets/js/data/copy.js"></script>
