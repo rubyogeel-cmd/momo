@@ -1,15 +1,49 @@
 /* ==========================================================================
    pages/plans.js
-   Renders the plan cards on plans.html from window.Plans.
-   Pure rendering: reads data, writes DOM, no network, no side effects
-   beyond the target container.
+   Renders the plan cards on plans.html from window.Plans, and drives
+   the MoMo redirect loader when a plan is tapped.
    ========================================================================== */
 
 (function (global) {
   "use strict";
 
   var CONTAINER_ID = "plan-list";
+  var LOADER_ID = "momo-loader";
   var CHECKOUT_PAGE = "checkout.html";
+
+  /**
+   * Show the MoMo redirect loader.
+   */
+  function showLoader() {
+    var loader = document.getElementById(LOADER_ID);
+    if (loader) {
+      loader.hidden = false;
+    }
+  }
+
+  /**
+   * Navigate to *href* after the configured dwell time.
+   * @param {string} href
+   */
+  function navigateAfterDwell(href) {
+    var dwell = (global.Copy && global.Copy.loader &&
+                 global.Copy.loader.dwellMs) || 5000;
+    global.setTimeout(function () {
+      global.location.href = href;
+    }, dwell);
+  }
+
+  /**
+   * Handle a click on a plan card: block default, show loader, dwell,
+   * then navigate.
+   * @param {MouseEvent} event
+   */
+  function handlePlanClick(event) {
+    event.preventDefault();
+    var href = event.currentTarget.href;
+    showLoader();
+    navigateAfterDwell(href);
+  }
 
   /**
    * Build the anchor element for a single plan.
@@ -54,6 +88,7 @@
     card.appendChild(head);
     card.appendChild(desc);
     card.appendChild(price);
+    card.addEventListener("click", handlePlanClick);
     return card;
   }
 
